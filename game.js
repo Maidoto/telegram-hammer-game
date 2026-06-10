@@ -583,6 +583,10 @@
       return "Leaderboard API не найден. В BotFather укажите Render URL, а не GitHub Pages.";
     }
 
+    if (status === 405) {
+      return `Leaderboard API ответил 405. Mini App открыт с ${window.location.origin}, а должен открываться с Render Web Service URL.`;
+    }
+
     return `Ошибка leaderboard API: ${status}. Проверьте Render Logs.`;
   }
 
