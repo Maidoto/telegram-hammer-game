@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#f6fbff">
+    <title>O`nь</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="./styles.css?v=effects3">
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Telegram Mini App</p>
+          <h1>O`nь</h1>
+        </div>
+        <button id="sound-toggle" class="pill-button" type="button" aria-pressed="false">Звук: выкл</button>
+      </header>
+
+      <section class="scoreboard" aria-label="Статистика игры">
+        <div class="stat">
+          <span>Очки</span>
+          <strong id="score">0</strong>
+        </div>
+        <div class="stat">
+          <span>Время</span>
+          <strong id="time">45</strong>
+        </div>
+        <div class="stat">
+          <span>Комбо</span>
+          <strong id="combo">x0</strong>
+        </div>
+        <div class="stat">
+          <span>Рекорд</span>
+          <strong id="best">0</strong>
+        </div>
+      </section>
+
+      <main class="game-shell">
+        <div id="arena" class="arena" aria-label="Игровое поле">
+          <button class="hole" type="button" data-index="0" aria-label="Люк 1">
+            <span class="machine">
+              <span class="head">
+                <span class="visor"></span>
+                <span class="face">
+                  <span class="eye left"></span>
+                  <span class="eye right"></span>
+                  <span class="mouth"></span>
+                </span>
+              </span>
+              <span class="hatch"></span>
+              <span class="bolts"></span>
+            </span>
+          </button>
+          <button class="hole" type="button" data-index="1" aria-label="Люк 2">
+            <span class="machine">
+              <span class="head">
+                <span class="visor"></span>
+                <span class="face">
+                  <span class="eye left"></span>
+                  <span class="eye right"></span>
+                  <span class="mouth"></span>
+                </span>
+              </span>
+              <span class="hatch"></span>
+              <span class="bolts"></span>
+            </span>
+          </button>
+          <button class="hole" type="button" data-index="2" aria-label="Люк 3">
+            <span class="machine">
+              <span class="head">
+                <span class="visor"></span>
+                <span class="face">
+                  <span class="eye left"></span>
+                  <span class="eye right"></span>
+                  <span class="mouth"></span>
+                </span>
+              </span>
+              <span class="hatch"></span>
+              <span class="bolts"></span>
+            </span>
+          </button>
+          <button class="hole" type="button" data-index="3" aria-label="Люк 4">
+            <span class="machine">
+              <span class="head">
+                <span class="visor"></span>
+                <span class="face">
+                  <span class="eye left"></span>
+                  <span class="eye right"></span>
+                  <span class="mouth"></span>
+                </span>
+              </span>
+              <span class="hatch"></span>
+              <span class="bolts"></span>
+            </span>
+          </button>
+          <button class="hole" type="button" data-index="4" aria-label="Люк 5">
+            <span class="machine">
+              <span class="head">
+                <span class="visor"></span>
+                <span class="face">
+                  <span class="eye left"></span>
+                  <span class="eye right"></span>
+                  <span class="mouth"></span>
+                </span>
+              </span>
+              <span class="hatch"></span>
+              <span class="bolts"></span>
+            </span>
+          </button>
+          <button class="hole" type="button" data-index="5" aria-label="Люк 6">
+            <span class="machine">
+              <span class="head">
+                <span class="visor"></span>
+                <span class="face">
+                  <span class="eye left"></span>
+                  <span class="eye right"></span>
+                  <span class="mouth"></span>
+                </span>
+              </span>
+              <span class="hatch"></span>
+              <span class="bolts"></span>
+            </span>
+          </button>
+          <button class="hole" type="button" data-index="6" aria-label="Люк 7">
+            <span class="machine">
+              <span class="head">
+                <span class="visor"></span>
+                <span class="face">
+                  <span class="eye left"></span>
+                  <span class="eye right"></span>
+                  <span class="mouth"></span>
+                </span>
+              </span>
+              <span class="hatch"></span>
+              <span class="bolts"></span>
+            </span>
+          </button>
+          <button class="hole" type="button" data-index="7" aria-label="Люк 8">
+            <span class="machine">
+              <span class="head">
+                <span class="visor"></span>
+                <span class="face">
+                  <span class="eye left"></span>
+                  <span class="eye right"></span>
+                  <span class="mouth"></span>
+                </span>
+              </span>
+              <span class="hatch"></span>
+              <span class="bolts"></span>
+            </span>
+          </button>
+          <button class="hole" type="button" data-index="8" aria-label="Люк 9">
+            <span class="machine">
+              <span class="head">
+                <span class="visor"></span>
+                <span class="face">
+                  <span class="eye left"></span>
+                  <span class="eye right"></span>
+                  <span class="mouth"></span>
+                </span>
+              </span>
+              <span class="hatch"></span>
+              <span class="bolts"></span>
+            </span>
+          </button>
+        </div>
+
+        <section id="panel" class="panel" aria-live="polite">
+          <p class="panel-kicker">45 секунд</p>
+          <h2 id="panel-title">Бей по голове, когда она вышла из аппарата</h2>
+          <p id="panel-text">Чем быстрее попадаешь без промахов, тем выше комбо и очки.</p>
+          <div class="panel-actions">
+            <button id="start-button" class="primary-button" type="button">Начать игру</button>
+            <button id="send-button" class="secondary-button hidden" type="button">Отправить результат</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <button id="restart-button" class="secondary-button" type="button">Заново</button>
+        <p id="telegram-status">Откройте через Telegram, чтобы отправлять результат боту.</p>
+      </footer>
+    </div>
+
+    <div id="hammer" class="hammer" aria-hidden="true">
+      <span class="hammer-head"></span>
+      <span class="hammer-neck"></span>
+      <span class="hammer-handle"></span>
+    </div>
+
+    <script src="./game.js?v=effects3"></script>
+  </body>
+</html>
