@@ -11,6 +11,7 @@ const botUsername = (process.env.BOT_USERNAME || "").replace(/^@/, "");
 const miniAppName = process.env.MINI_APP_NAME || "";
 const scoresFile = process.env.SCORES_FILE || path.join(__dirname, "scores.json");
 const port = Number(process.env.PORT || 8080);
+const host = process.env.HOST || "0.0.0.0";
 const root = __dirname;
 
 if (!token || !publicUrl) {
@@ -38,10 +39,7 @@ let offset = 0;
 let scores = loadScores();
 
 startServer();
-poll().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+poll();
 
 function startServer() {
   const server = http.createServer(async (req, res) => {
@@ -53,8 +51,8 @@ function startServer() {
     }
   });
 
-  server.listen(port, () => {
-    console.log(`Game and leaderboard server is running at http://localhost:${port}`);
+  server.listen(port, host, () => {
+    console.log(`Game and leaderboard server is running at http://${host}:${port}`);
   });
 }
 
@@ -95,15 +93,27 @@ async function poll() {
   console.log("Bot is polling Telegram updates.");
 
   while (true) {
-    const result = await call("getUpdates", {
-      offset,
-      timeout: 25,
-      allowed_updates: ["message"]
-    });
+    try {
+      const result = await call("getUpdates", {
+        offset,
+        timeout: 25,
+        allowed_updates: ["message"]
+      });
 
-    for (const update of result) {
-      offset = update.update_id + 1;
-      await handleUpdate(update);
+      for (const update of result) {
+        offset = update.update_id + 1;
+        await handleUpdate(update);
+      }
+    } catch (error) {
+      const telegramError = error.telegram || {};
+      if (telegramError.error_code === 409) {
+        console.warn("Telegram polling conflict: another bot instance is running. Waiting 10 seconds before retrying.");
+        await sleep(10000);
+        continue;
+      }
+
+      console.error("Telegram polling failed:", error);
+      await sleep(5000);
     }
   }
 }
@@ -412,10 +422,18 @@ async function call(method, payload) {
 
   const json = await response.json();
   if (!json.ok) {
-    throw new Error(`${method} failed: ${JSON.stringify(json)}`);
+    const error = new Error(`${method} failed: ${JSON.stringify(json)}`);
+    error.telegram = json;
+    throw error;
   }
 
   return json.result;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function loadScores() {
