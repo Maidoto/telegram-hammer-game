@@ -8,8 +8,6 @@ services:
     envVars:
       - key: BOT_TOKEN
         sync: false
-      - key: PUBLIC_URL
-        sync: false
       - key: BOT_USERNAME
         sync: false
       - key: MINI_APP_NAME

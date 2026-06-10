@@ -39,7 +39,7 @@ $env:WEB_APP_URL="https://your-domain.example/"
 node bot.js
 ```
 
-После команды `/play` бот отправит кнопку `Играть`. Когда пользователь завершит раунд, игра вызовет `Telegram.WebApp.sendData(...)`, а бот получит результат в `message.web_app_data`.
+После команды `/play` бот отправит кнопку `Играть`. Когда пользователь завершит раунд, игра отправит результат на Render API `/api/score`, а команда `/top` покажет leaderboard этой группы.
 
 ## Важные замечания
 
@@ -73,7 +73,6 @@ node bot.js
 
 ```powershell
 $env:BOT_TOKEN="123456:ABC..."
-$env:PUBLIC_URL="https://your-server.example"
 $env:BOT_USERNAME="your_bot_username"
 node bot.js
 ```
@@ -88,3 +87,5 @@ node bot.js
 ```powershell
 $env:MINI_APP_NAME="appname"
 ```
+
+Важно: в BotFather URL Mini App должен быть Render URL, где запущен `bot.js`. Если оставить GitHub Pages URL, игра откроется, но leaderboard API `/api/score` не будет найден.

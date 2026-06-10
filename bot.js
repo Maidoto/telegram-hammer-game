@@ -6,7 +6,7 @@ const http = require("node:http");
 const path = require("node:path");
 
 const token = process.env.BOT_TOKEN;
-const publicUrl = normalizeUrl(process.env.PUBLIC_URL || process.env.WEB_APP_URL || "");
+const publicUrl = normalizeUrl(process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || process.env.WEB_APP_URL || "");
 const botUsername = (process.env.BOT_USERNAME || "").replace(/^@/, "");
 const miniAppName = process.env.MINI_APP_NAME || "";
 const scoresFile = process.env.SCORES_FILE || path.join(__dirname, "scores.json");

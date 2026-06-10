@@ -716,6 +716,16 @@ h1 {
   text-align: right;
 }
 
+.footer p.is-success {
+  color: #178f68;
+  font-weight: 800;
+}
+
+.footer p.is-error {
+  color: #c63d3d;
+  font-weight: 800;
+}
+
 .hammer {
   position: fixed;
   left: 50%;

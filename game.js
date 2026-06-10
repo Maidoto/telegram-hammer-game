@@ -91,6 +91,8 @@
   let proceduralMusicTimer = 0;
   let proceduralMusicStep = 0;
   let leaderboardGroup = getLeaderboardGroup();
+  let lastSubmittedScoreKey = "";
+  let scoreSubmitPromise = null;
   let lastPointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
   bestEl.textContent = String(bestScore);
@@ -105,12 +107,12 @@
 
   function setupTelegram() {
     if (!tg) {
-      telegramStatus.textContent = "Сейчас открыт браузерный режим. В Telegram появится отправка результата.";
+      setSubmitStatus("Сейчас открыт браузерный режим. Для leaderboard откройте игру через /play в Telegram.");
       return;
     }
 
     document.documentElement.classList.add("inside-telegram");
-    telegramStatus.textContent = "Telegram подключен. После игры можно отправить результат боту.";
+    setSubmitStatus("Telegram подключен. Результат отправится в leaderboard после игры.");
 
     applyTelegramTheme();
     tg.ready();
@@ -202,8 +204,11 @@
     misses = 0;
     startedAt = performance.now();
     screenMode = "game";
+    lastSubmittedScoreKey = "";
+    scoreSubmitPromise = null;
     panel.classList.add("hidden");
     sendButton.classList.add("hidden");
+    setSubmitStatus(tg ? "Игра идет. Результат отправится после раунда." : "Игра идет в браузере. Leaderboard работает только через Telegram /play.");
 
     if (tg && tg.MainButton) {
       tg.MainButton.hide();
@@ -406,7 +411,7 @@
     }
 
     showEndEffect(isRecord, interrupted);
-    submitScore();
+    submitScore("auto");
     stopMusic("gameMusic");
     playMusicForScreen();
     playSound(isRecord ? "record" : "game-over");
@@ -418,38 +423,49 @@
     return `Очки: ${score}. Попадания: ${hits}. Промахи: ${misses}. ${bestPart}`;
   }
 
-  function sendResult() {
-    const payload = {
-      game: "hammer-head",
-      score,
-      bestScore,
-      hits,
-      misses,
-      durationSeconds: GAME_SECONDS,
-      finishedAt: new Date().toISOString()
-    };
+  async function sendResult() {
+    const sentToLeaderboard = await submitScore("manual");
 
-    if (!tg || typeof tg.sendData !== "function") {
-      window.alert(JSON.stringify(payload, null, 2));
+    if (sentToLeaderboard) {
+      haptic("notification", "success");
       return;
     }
 
-    try {
-      tg.sendData(JSON.stringify(payload));
-      submitScore();
-      haptic("notification", "success");
-    } catch (error) {
-      console.error(error);
-      tg.showAlert ? tg.showAlert("Не удалось отправить результат. Откройте игру через кнопку Web App у бота.") : window.alert("Не удалось отправить результат.");
+    if (!tg || !tg.initData) {
+      showTelegramAlert("Откройте игру через кнопку /play в Telegram. Обычная ссылка в браузере не может отправить результат.");
+      return;
     }
+
+    showTelegramAlert("Не удалось отправить результат в leaderboard. Проверьте Render Logs и URL Mini App в BotFather.");
   }
 
-  async function submitScore() {
-    if (!tg || !tg.initData || !leaderboardGroup) {
-      return;
+  async function submitScore(reason) {
+    if (!leaderboardGroup) {
+      setSubmitStatus("Не удалось определить группу для leaderboard.", "error");
+      return false;
     }
 
-    try {
+    if (!tg || !tg.initData) {
+      setSubmitStatus("Результат не отправлен: откройте игру через кнопку /play в Telegram.", "error");
+      return false;
+    }
+
+    const submitKey = getScoreSubmitKey();
+    if (lastSubmittedScoreKey === submitKey) {
+      setSubmitStatus(`Результат уже в leaderboard. Ваш рекорд: ${bestScore}.`, "success");
+      return true;
+    }
+
+    if (scoreSubmitPromise) {
+      if (reason === "manual") {
+        setSubmitStatus("Результат уже отправляется в leaderboard...");
+      }
+      return scoreSubmitPromise;
+    }
+
+    setSubmitStatus("Отправляю результат в leaderboard...");
+
+    scoreSubmitPromise = (async () => {
       const response = await fetch(apiUrl("/api/score"), {
         method: "POST",
         headers: {
@@ -465,17 +481,36 @@
         })
       });
 
+      const data = await response.json().catch(() => null);
       if (!response.ok) {
-        return;
+        setSubmitStatus(getSubmitHttpErrorText(response.status), "error");
+        return false;
       }
 
-      const data = await response.json();
       if (data.ok && data.leaderboard) {
+        lastSubmittedScoreKey = submitKey;
+        if (Number.isFinite(Number(data.best))) {
+          bestScore = Math.max(bestScore, Number(data.best));
+          bestEl.textContent = String(bestScore);
+        }
         renderLeaderboard(data.leaderboard);
+        setSubmitStatus(`Результат отправлен. Ваш рекорд: ${data.best}.`, "success");
+        return true;
       }
-    } catch (error) {
-      console.warn("Leaderboard submit failed", error);
-    }
+
+      setSubmitStatus(getSubmitApiErrorText(data && data.error), "error");
+      return false;
+    })()
+      .catch((error) => {
+        console.warn("Leaderboard submit failed", error);
+        setSubmitStatus("Не удалось связаться с leaderboard. Проверьте, что Render deploy работает.", "error");
+        return false;
+      })
+      .finally(() => {
+        scoreSubmitPromise = null;
+      });
+
+    return scoreSubmitPromise;
   }
 
   async function loadLeaderboard() {
@@ -527,6 +562,53 @@
 
   function apiUrl(path) {
     return `${LEADERBOARD_API_URL}${path}`;
+  }
+
+  function getScoreSubmitKey() {
+    return [leaderboardGroup, score, hits, misses, Math.round(startedAt)].join(":");
+  }
+
+  function setSubmitStatus(message, state) {
+    if (!telegramStatus) {
+      return;
+    }
+
+    telegramStatus.textContent = message;
+    telegramStatus.classList.toggle("is-error", state === "error");
+    telegramStatus.classList.toggle("is-success", state === "success");
+  }
+
+  function getSubmitHttpErrorText(status) {
+    if (status === 404) {
+      return "Leaderboard API не найден. В BotFather укажите Render URL, а не GitHub Pages.";
+    }
+
+    return `Ошибка leaderboard API: ${status}. Проверьте Render Logs.`;
+  }
+
+  function getSubmitApiErrorText(errorCode) {
+    switch (errorCode) {
+      case "missing_init_data":
+        return "Telegram не передал данные игрока. Откройте игру через /play.";
+      case "expired_init_data":
+        return "Сессия Telegram устарела. Закройте игру и откройте заново через /play.";
+      case "bad_signature":
+        return "Telegram не подтвердил игрока. Проверьте BOT_TOKEN на Render.";
+      case "missing_hash":
+      case "bad_user":
+        return "Telegram передал неполные данные игрока. Откройте игру заново через /play.";
+      default:
+        return `Сервер не принял результат: ${errorCode || "unknown_error"}.`;
+    }
+  }
+
+  function showTelegramAlert(message) {
+    if (tg && typeof tg.showAlert === "function") {
+      tg.showAlert(message);
+      return;
+    }
+
+    window.alert(message);
   }
 
   function getLeaderboardGroup() {
