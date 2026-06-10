@@ -666,6 +666,42 @@ h1 {
   gap: 10px;
 }
 
+.leaderboard {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.leaderboard h3 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+
+.leaderboard ol {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  list-style: none;
+}
+
+.leaderboard li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.56);
+  color: var(--text);
+}
+
+.leaderboard strong {
+  color: var(--accent-strong);
+}
+
 .footer {
   display: flex;
   align-items: center;

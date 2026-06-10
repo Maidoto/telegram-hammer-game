@@ -9,6 +9,7 @@
   const MIN_SPAWN_MS = 330;
   const IMPACT_EFFECT_MS = 420;
   const STORAGE_KEY = "hammer-head-best-score";
+  const LEADERBOARD_API_URL = (window.LEADERBOARD_API_URL || "").replace(/\/+$/, "");
   const AUDIO_SLOTS = {
     hammerHit: { src: "./assets/sounds/hammer-hit.mp3", volume: 0.95 },
     hammerMiss: { src: "./assets/sounds/hammer-miss.mp3", volume: 0.9 },
@@ -65,6 +66,8 @@
   const sendButton = document.getElementById("send-button");
   const soundToggle = document.getElementById("sound-toggle");
   const telegramStatus = document.getElementById("telegram-status");
+  const leaderboard = document.getElementById("leaderboard");
+  const leaderboardList = document.getElementById("leaderboard-list");
   const hammer = document.getElementById("hammer");
 
   let running = false;
@@ -87,6 +90,7 @@
   let proceduralMusicKey = null;
   let proceduralMusicTimer = 0;
   let proceduralMusicStep = 0;
+  let leaderboardGroup = getLeaderboardGroup();
   let lastPointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
   bestEl.textContent = String(bestScore);
@@ -97,6 +101,7 @@
   discoverCustomAudio();
   bindEvents();
   render();
+  loadLeaderboard();
 
   function setupTelegram() {
     if (!tg) {
@@ -401,6 +406,7 @@
     }
 
     showEndEffect(isRecord, interrupted);
+    submitScore();
     stopMusic("gameMusic");
     playMusicForScreen();
     playSound(isRecord ? "record" : "game-over");
@@ -430,11 +436,102 @@
 
     try {
       tg.sendData(JSON.stringify(payload));
+      submitScore();
       haptic("notification", "success");
     } catch (error) {
       console.error(error);
       tg.showAlert ? tg.showAlert("Не удалось отправить результат. Откройте игру через кнопку Web App у бота.") : window.alert("Не удалось отправить результат.");
     }
+  }
+
+  async function submitScore() {
+    if (!tg || !tg.initData || !leaderboardGroup) {
+      return;
+    }
+
+    try {
+      const response = await fetch(apiUrl("/api/score"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          initData: tg.initData,
+          group: leaderboardGroup,
+          score,
+          hits,
+          misses,
+          durationSeconds: GAME_SECONDS
+        })
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      if (data.ok && data.leaderboard) {
+        renderLeaderboard(data.leaderboard);
+      }
+    } catch (error) {
+      console.warn("Leaderboard submit failed", error);
+    }
+  }
+
+  async function loadLeaderboard() {
+    if (!leaderboardGroup) {
+      return;
+    }
+
+    try {
+      const response = await fetch(apiUrl(`/api/leaderboard?group=${encodeURIComponent(leaderboardGroup)}`), {
+        cache: "no-store"
+      });
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      if (data.ok && data.leaderboard) {
+        renderLeaderboard(data.leaderboard);
+      }
+    } catch (error) {
+      // GitHub Pages does not provide the leaderboard API. The game still works without it.
+    }
+  }
+
+  function renderLeaderboard(items) {
+    if (!leaderboard || !leaderboardList) {
+      return;
+    }
+
+    leaderboardList.innerHTML = "";
+
+    if (!items.length) {
+      leaderboard.classList.add("hidden");
+      return;
+    }
+
+    items.slice(0, 5).forEach((entry) => {
+      const item = document.createElement("li");
+      const name = document.createElement("span");
+      const scoreValue = document.createElement("strong");
+      name.textContent = `${entry.rank}. ${entry.name}`;
+      scoreValue.textContent = String(entry.best);
+      item.append(name, scoreValue);
+      leaderboardList.appendChild(item);
+    });
+
+    leaderboard.classList.remove("hidden");
+  }
+
+  function apiUrl(path) {
+    return `${LEADERBOARD_API_URL}${path}`;
+  }
+
+  function getLeaderboardGroup() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("g") || (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || "global";
   }
 
   function clearTimers() {

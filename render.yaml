@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: telegram-hammer-game
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node bot.js
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: PUBLIC_URL
+        sync: false
+      - key: BOT_USERNAME
+        sync: false
+      - key: MINI_APP_NAME
+        sync: false

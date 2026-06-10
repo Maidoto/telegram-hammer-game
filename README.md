@@ -66,3 +66,25 @@ node bot.js
 Для своих звуков положите MP3-файлы в `assets/sounds`. Полный список имен есть в `assets/sounds/README.md`. Если какого-то аудиофайла нет, игра автоматически использует встроенный WebAudio-звук или встроенную WebAudio-музыку.
 
 В игре есть визуальные эффекты: сильная тряска экрана, полноэкранная вспышка удара, крупные искры, комбо-плашки, предупреждение таймера и конфетти в конце раунда.
+
+## Leaderboard в группе Telegram
+
+Для соревнования в группе нужен Node.js сервер, потому что GitHub Pages не хранит результаты. Запускайте `bot.js` на Render/Railway/VPS:
+
+```powershell
+$env:BOT_TOKEN="123456:ABC..."
+$env:PUBLIC_URL="https://your-server.example"
+$env:BOT_USERNAME="your_bot_username"
+node bot.js
+```
+
+Команды в Telegram:
+
+- `/play` - отправляет кнопку игры в группу.
+- `/top` - показывает leaderboard текущей группы.
+
+Для группы лучше настроить Main Mini App в `@BotFather`, тогда ссылка вида `https://t.me/your_bot_username?startapp=...` откроет игру внутри Telegram и передаст данные игрока. Если у Mini App есть short name, добавьте:
+
+```powershell
+$env:MINI_APP_NAME="appname"
+```
